@@ -22,7 +22,7 @@ def public_info(linkEnd, pair):
 
 def get_price(pair):
     data = public_info("Ticker", pair)
-    price = data[3]
+    price = data.get(pair).get('c')
     return price
 
 print(get_price(pair))
