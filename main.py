@@ -2,11 +2,13 @@ import math
 import requests
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv() 
 
 url_public = os.getenv("KRAKEN_PUBLIC")
 pair = os.getenv("PAIR")
+interval = os.getenv("INTERVAL")
 
 session =requests.Session() # start the session
 
@@ -28,7 +30,9 @@ def get_price(pair):
     price = data[-1][4]
     return price
 
-print(get_price(pair))
+while True:
+    print(get_price(pair))
+    time.sleep(30)
 
 
 
