@@ -18,11 +18,14 @@ def public_info(linkEnd, pair):
     response.raise_for_status() # Check for status, 200 is good
     data = response.json() # make the json into a map
 
-    return data["result"]
+    candles = data["result"].get(pair)
+    if candles is None:
+        raise ValueError(f"No OHLC data found for pair '{pair}'")
+    return candles
 
 def get_price(pair):
-    data = public_info("Ticker", pair)
-    price = data.get(pair).get('c')
+    data = public_info("OHLC", pair)
+    price = data[-1][4]
     return price
 
 print(get_price(pair))
