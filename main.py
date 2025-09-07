@@ -3,6 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 import time
+import csv
 
 load_dotenv() 
 
@@ -31,8 +32,16 @@ def get_price(pair, candle):
     price = data[-1][4]
     return price
 
+def write_out(price):
+    with open("data_log.csv", "a", newline="") as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow(price)
+        
+
 while True:
-    print(get_price(pair, candle))
+    final_price = [get_price(pair, candle)]
+    print(final_price)
+    write_out(final_price)
     time.sleep(interval)
 
 
