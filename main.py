@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import time
 import csv
+import pandas as pd
 
 load_dotenv() 
 
@@ -28,11 +29,13 @@ def public_info(linkEnd, pair, candle):
     return candles
 
 def get_price(pair, candle):
+    """Gets the latest price of the pair"""
     data = public_info("OHLC", pair, candle)
-    price = data[-1][4]
+    price = data[-1][4] # the position of the last closing price
     return price
 
 def write_out(price):
+    """Writes out the latest price to CSV file. If CSV file does not exist it creats a new onee"""
     with open("data_log.csv", "a", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow(price)
