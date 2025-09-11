@@ -10,8 +10,8 @@ load_dotenv()
 
 url_public = os.getenv("KRAKEN_PUBLIC")
 pair = os.getenv("PAIR")
-interval = int(os.getenv("INTERVAL"))
-candle = os.getenv("CANDLE")
+interval = int(os.getenv("INTERVAL")) # in seconds
+candle = os.getenv("CANDLE") # in minutes
 
 session =requests.Session() # start the session
 
@@ -28,24 +28,26 @@ def public_info(linkEnd, pair, candle):
         raise ValueError(f"No OHLC data found for pair '{pair}'") # if get returns none
     return candles
 
-def get_price(pair, candle):
+def get_candle(pair, candle):
     """Gets the latest price of the pair"""
-    data = public_info("OHLC", pair, candle)
-    price = data[-1][4] # the position of the last closing price
-    return price
+    data = public_info("OHLC", pair, candle) # Get the candle info 
+    df = pd.DataFrame(data, columns=["time","open","high","low","close","vwap","volume","count"]) # Put in dataframe
+    df["close"] = df["close"].astype(float)
+    return df
+
 
 def write_out(price):
     """Writes out the latest price to CSV file. If CSV file does not exist it creats a new onee"""
     with open("data_log.csv", "a", newline="") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
+        writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
         writer.writerow(price)
         
 
 while True:
-    final_price = [get_price(pair, candle)]
-    print(final_price)
-    write_out(final_price)
-    time.sleep(interval)
+    df = get_candle(pair, candle)
+    print(df["close"].iloc[-1])
+    write_out([df["close"].iloc[-1]]) # get the latest price at index [-1]
+    time.sleep(interval) 
 
 
 
