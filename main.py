@@ -42,6 +42,20 @@ def write_out(price):
         writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
         writer.writerow(price)
         
+def RSI(df):
+    """Calculate RSI with Wilder's Smoothing"""
+    delta = df['Close'].diff()
+    gain = delta.clip(lower=0) # pos values
+    loss = -delta.clip(upper=0)
+
+    window_length = 14 # Change this to change RSI length
+    avg_gain = gain.ewm(alpha=1/window_length, adjust=False).mean() #ewm for exp moving average
+    avg_loss = loss.ewm(alpha=1/window_length, adjust=False).mean()
+
+    rs = avg_gain / avg_loss # RSI calculation
+    df['RSI'] = 100 - (100 / (1 + rs))
+
+    return df
 
 while True:
     df = get_candle(pair, candle)
