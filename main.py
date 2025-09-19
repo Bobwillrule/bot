@@ -37,11 +37,12 @@ def GetCandle(pair, candle):
     return df
 
 
-def WriteOut(price):
+def WriteOut(df):
     """Writes out the latest price to CSV file. If CSV file does not exist it creats a new onee"""
     with open("data_log.csv", "a", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
-        writer.writerow(price)
+        writer.writerow([df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1]])
+    print(df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1])
         
 def RSI(df, period=14):
     """Calculate RSI with Wilder's Smoothing/exponential moving average"""
@@ -69,7 +70,7 @@ while True:
     df = RSI(df, RSIPeriod)
     df = StochRSI(df, RSIPeriod)
     print(df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1])
-    WriteOut([df["close"].iloc[-1]]) # get the latest price at index [-1]
+    WriteOut(df) # get the latest price at index [-1]
     time.sleep(interval) 
 
 
