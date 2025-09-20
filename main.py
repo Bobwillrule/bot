@@ -6,6 +6,8 @@ import time
 import csv
 import pandas as pd
 
+from datetime import datetime, timezone, timedelta
+
 load_dotenv() 
 
 url_public = os.getenv("KRAKEN_PUBLIC")
@@ -15,6 +17,11 @@ candle = os.getenv("CANDLE") # in minutes
 RSIPeriod = int(os.getenv("RSIPERIOD"))
 
 session =requests.Session() # start the session
+
+def WhatTime():
+    return f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}/" \
+           f"{datetime.now(timezone(timedelta(hours=-7))).strftime('%m-%d %H:%M:%S')}"
+
 
 def PublicInfo(linkEnd, pair, candle):
     """Gets the public info of the kraken API. Link end appends to the end of the link
@@ -41,8 +48,8 @@ def WriteOut(df):
     """Writes out the latest price to CSV file. If CSV file does not exist it creats a new onee"""
     with open("data_log.csv", "a", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
-        writer.writerow([df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1]])
-    print(df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1])
+        writer.writerow([df["timeStamp"].iloc[-1], df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1]])
+    print(df["timeStamp"].iloc[-1], df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1])
         
 def RSI(df, period=14):
     """Calculate RSI with Wilder's Smoothing/exponential moving average"""
@@ -74,6 +81,7 @@ def addWeight(df):
 
 while True:
     df = GetCandle(pair, candle)
+    df["timeStamp"] = WhatTime()
     df = addWeight(df)
     WriteOut(df) # get the latest price at index [-1]
     time.sleep(interval) 
