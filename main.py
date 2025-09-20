@@ -41,8 +41,8 @@ def WriteOut(df):
     """Writes out the latest price to CSV file. If CSV file does not exist it creats a new onee"""
     with open("data_log.csv", "a", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
-        writer.writerow([df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1]])
-    print(df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1])
+        writer.writerow([df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1]])
+    print(df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1])
         
 def RSI(df, period=14):
     """Calculate RSI with Wilder's Smoothing/exponential moving average"""
@@ -58,18 +58,23 @@ def RSI(df, period=14):
     return df
 
 def StochRSI(df, period=14):
-    """ Calculates Stochastic RSI based on RSI"""
+    """ REQUIRES: df with RSI (RSI function call first), non-zero period
+    EFFECTS: Calculates the stochastic RSI based on RSI"""
     rsi = df['RSI']
     min_rsi = rsi.rolling(window=period).min()
     max_rsi = rsi.rolling(window=period).max()
     df['stochRSI'] = ((rsi - min_rsi) / (max_rsi - min_rsi))*100
     return df
 
+def addWeight(df):
+    df =RSI(df, RSIPeriod)
+    df = StochRSI(df, RSIPeriod)
+    df['Score'] = df['RSI'].iloc[-1] + df['stochRSI'].iloc[-1]
+    return df
+
 while True:
     df = GetCandle(pair, candle)
-    df = RSI(df, RSIPeriod)
-    df = StochRSI(df, RSIPeriod)
-    print(df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1])
+    df = addWeight(df)
     WriteOut(df) # get the latest price at index [-1]
     time.sleep(interval) 
 
