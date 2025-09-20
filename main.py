@@ -18,10 +18,12 @@ RSIPeriod = int(os.getenv("RSIPERIOD"))
 sellThreshold = int(os.getenv("SELLTHRESHOLD"))
 buyThreshold = int(os.getenv("BUYTHRESHOLD"))
 startMoney = int(os.getenv("INITIALPAPERMONEY"))
+lotSize = int(os.getenv("HOWMANYYOUWANT"))
 
 session =requests.Session() # start the session
 
 def WhatTime():
+    """returns the current date and time"""
     return f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}/" \
            f"{datetime.now(timezone(timedelta(hours=-7))).strftime('%m-%d %H:%M:%S')}"
 
@@ -85,24 +87,35 @@ def addWeight(df):
 
 def evaluation(df, buyThreshold, sellThreshold):
     df = addWeight(df)
-    if (df["Score"] == buyThreshold):
+    if (df["Score"] == buyThreshold): # If score is above threshold
         PaperTrade(df)
-        df["decision"] = f"Buy @ {df["close"].iloc[-1]}"
-    elif (df["Score"] == sellThreshold):
+        df["decision"] = f"Buy @ {df["close"].iloc[-1]}" 
+    elif (df["Score"] == sellThreshold): # If score is below seel threshold
         PaperTrade(df)
         df["decision"] = f"Sell @ {df["close"].iloc[-1]}"
-    else: 
+    else: # Hold what you have 
         df["decision"] = "Hold"
     return df
 
-def PaperTrade(df, startMoney):
-    
+def PaperTrade(df, buy, lotSize):
+    """Practice trading selling"""
+    if buy:
+        price = lotSize * df["close"].iloc[-1] # Calculates the price if we buy
+        if price < df["Balance"].iloc[-1]: # check that we have enough money
+            df["Balance"] = df["Balance"] - price
+            df["Amount"] = df["Amount"] + lotSize
+    else:
+        if df["Amount"].iloc[-1] > lotSize: # Check if we have enough to sell 
+            price = lotSize * df["close"].iloc[-1] 
+            df["Balance"] = df["Balance"] + price
+            df["Amount"] = df["Amount"] - lotSize
     return df
 
 while True:
     df = GetCandle(pair, candle)
     df["timeStamp"] = WhatTime()
     df = addWeight(df)
+    df["Balance"] = startMoney
     WriteOut(df) # get the latest price at index [-1]
     time.sleep(interval) 
 
