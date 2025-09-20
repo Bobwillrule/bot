@@ -15,6 +15,9 @@ pair = os.getenv("PAIR")
 interval = int(os.getenv("INTERVAL")) # in seconds
 candle = os.getenv("CANDLE") # in minutes
 RSIPeriod = int(os.getenv("RSIPERIOD"))
+sellThreshold = int(os.getenv("SELLTHRESHOLD"))
+buyThreshold = int(os.getenv("BUYTHRESHOLD"))
+startMoney = int(os.getenv("INITIALPAPERMONEY"))
 
 session =requests.Session() # start the session
 
@@ -50,6 +53,7 @@ def WriteOut(df):
         writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
         writer.writerow([df["timeStamp"].iloc[-1], df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1]])
     print(f"{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["RSI"].iloc[-1]:.2f}, {df["stochRSI"].iloc[-1]:.2f}, {df["Score"].iloc[-1]:.2f}")
+
         
 def RSI(df, period=14):
     """Calculate RSI with Wilder's Smoothing/exponential moving average"""
@@ -77,6 +81,22 @@ def addWeight(df):
     df =RSI(df, RSIPeriod)
     df = StochRSI(df, RSIPeriod)
     df['Score'] = df['RSI'].iloc[-1] + df['stochRSI'].iloc[-1]
+    return df
+
+def evaluation(df, buyThreshold, sellThreshold):
+    df = addWeight(df)
+    if (df["Score"] == buyThreshold):
+        PaperTrade(df)
+        df["decision"] = f"Buy @ {df["close"].iloc[-1]}"
+    elif (df["Score"] == sellThreshold):
+        PaperTrade(df)
+        df["decision"] = f"Sell @ {df["close"].iloc[-1]}"
+    else: 
+        df["decision"] = "Hold"
+    return df
+
+def PaperTrade(df, startMoney):
+    
     return df
 
 while True:
