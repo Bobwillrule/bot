@@ -49,7 +49,7 @@ def WriteOut(df):
     with open("data_log.csv", "a", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
         writer.writerow([df["timeStamp"].iloc[-1], df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1]])
-    print(df["timeStamp"].iloc[-1], df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1])
+    print(f"{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["RSI"].iloc[-1]:.2f}, {df["stochRSI"].iloc[-1]:.2f}, {df["Score"].iloc[-1]:.2f}")
         
 def RSI(df, period=14):
     """Calculate RSI with Wilder's Smoothing/exponential moving average"""
