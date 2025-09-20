@@ -80,9 +80,22 @@ def StochRSI(df, period=14):
     return df
 
 def addWeight(df):
-    df =RSI(df, RSIPeriod)
-    df = StochRSI(df, RSIPeriod)
-    df['Score'] = df['RSI'].iloc[-1] + df['stochRSI'].iloc[-1]
+    df = RSI(df, RSIPeriod)
+
+    score = 0
+    if df["RSI"].iloc[-1] < 30:
+        score += 30
+    elif df["RSI"].iloc[-1] > 70:
+        score -= 30
+
+    if df["stochRSI"].iloc[-1] < 30:
+        score += 30
+    elif df["stochRSI"].iloc[-1] > 70:
+        score -= 30
+
+    # set score only for the last row
+    df.loc[df.index[-1], "Score"] = score
+
     return df
 
 def evaluation(df, buyThreshold, sellThreshold):
@@ -98,18 +111,31 @@ def evaluation(df, buyThreshold, sellThreshold):
     return df
 
 def PaperTrade(df, buy, lotSize):
-    """Practice trading selling"""
+    """Practice trading updating only the last row (no history added)"""
+
     if buy:
-        price = lotSize * df["close"].iloc[-1] # Calculates the price if we buy
-        if price < df["Balance"].iloc[-1]: # check that we have enough money
-            df["Balance"] = df["Balance"] - price
-            df["Amount"] = df["Amount"] + lotSize
+        # Calculate cost of purchase
+        price = lotSize * df["close"].iloc[-1]
+
+        # Check that we have enough money to buy
+        if price <= df["Balance"].iloc[-1]:
+            # Deduct cost from balance
+            df.loc[df.index[-1], "Balance"] -= price
+            # Add coins to our holdings
+            df.loc[df.index[-1], "Amount"]  += lotSize
+
     else:
-        if df["Amount"].iloc[-1] > lotSize: # Check if we have enough to sell 
-            price = lotSize * df["close"].iloc[-1] 
-            df["Balance"] = df["Balance"] + price
-            df["Amount"] = df["Amount"] - lotSize
+        # Check that we have enough coins to sell
+        if df["Amount"].iloc[-1] >= lotSize:
+            # Calculate proceeds of sale
+            price = lotSize * df["close"].iloc[-1]
+            # Add money to balance
+            df.loc[df.index[-1], "Balance"] += price
+            # Subtract coins from holdings
+            df.loc[df.index[-1], "Amount"]  -= lotSize
+
     return df
+
 
 while True:
     df = GetCandle(pair, candle)
