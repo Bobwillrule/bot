@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import time
 import csv
 import pandas as pd
+from RSIIndicators import RSI, StochRSI
+
 
 from datetime import datetime, timezone, timedelta
 
@@ -24,6 +26,7 @@ session =requests.Session() # start the session
 
 def WhatTime():
     """returns the current date and time"""
+    print("hello world!")
     return f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}/" \
            f"{datetime.now(timezone(timedelta(hours=-7))).strftime('%m-%d %H:%M:%S')}"
 
@@ -49,38 +52,33 @@ def GetCandle(pair, candle):
     return df
 
 
+import csv
+import os
+
 def WriteOut(df):
-    """Writes out the latest price to CSV file. If CSV file does not exist it creats a new onee"""
+    """Writes out the latest price to CSV file. Writes header only if file does not exist."""
+
+    file_exists = os.path.isfile("data_log.csv")
+
     with open("data_log.csv", "a", newline="") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',') # split into comma seperated
-        writer.writerow([df["timeStamp"].iloc[-1], df["close"].iloc[-1], df["RSI"].iloc[-1], df["stochRSI"].iloc[-1], df["Score"].iloc[-1]])
-    print(f"{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["RSI"].iloc[-1]:.2f}, {df["stochRSI"].iloc[-1]:.2f}, {df["Score"].iloc[-1]:.2f}")
-
+        writer = csv.writer(csv_file, delimiter=',')
         
-def RSI(df, period=14):
-    """Calculate RSI with Wilder's Smoothing/exponential moving average"""
-    delta = df['close'].diff()
-    gain = delta.clip(lower=0) # pos values
-    loss = -delta.clip(upper=0)
-    period = 14 # Change this to change RSI length
-    avg_gain = gain.ewm(alpha=1/period, adjust=False).mean() #ewm for exp moving average
-    avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
+        if not file_exists:  # File doesn't exist , write header
+            writer.writerow(["Time", "Closing Price", "RSI Value", "Stochastic RSI", "Score"])
+        
+        # Write latest data row
+        writer.writerow([df["timeStamp"].iloc[-1],
+                         df["close"].iloc[-1],
+                         df["RSI"].iloc[-1],
+                         df["stochRSI"].iloc[-1],
+                         df["Score"].iloc[-1]])
+    
+    print(f'{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["RSI"].iloc[-1]:.2f}, {df["stochRSI"].iloc[-1]:.2f}, {df["Score"].iloc[-1]:.2f}')
 
-    rs = avg_gain / avg_loss # RSI calculation
-    df['RSI'] = 100 - (100 / (1 + rs))
-    return df
-
-def StochRSI(df, period=14):
-    """ REQUIRES: df with RSI (RSI function call first), non-zero period
-    EFFECTS: Calculates the stochastic RSI based on RSI"""
-    rsi = df['RSI']
-    min_rsi = rsi.rolling(window=period).min()
-    max_rsi = rsi.rolling(window=period).max()
-    df['stochRSI'] = ((rsi - min_rsi) / (max_rsi - min_rsi))*100
-    return df
 
 def addWeight(df):
     df = RSI(df, RSIPeriod)
+    df = StochRSI(df, RSIPeriod)
 
     score = 0
     if df["RSI"].iloc[-1] < 30:
@@ -133,9 +131,7 @@ def PaperTrade(df, buy, lotSize):
             df.loc[df.index[-1], "Balance"] += price
             # Subtract coins from holdings
             df.loc[df.index[-1], "Amount"]  -= lotSize
-
     return df
-
 
 while True:
     df = GetCandle(pair, candle)
@@ -143,7 +139,7 @@ while True:
     df = addWeight(df)
     df["Balance"] = startMoney
     WriteOut(df) # get the latest price at index [-1]
-    time.sleep(interval) 
+    time.sleep(interval)
 
 
 
