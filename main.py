@@ -6,7 +6,7 @@ import time
 import csv
 import pandas as pd
 from RSIIndicators import RSI, StochRSI
-
+from writeOut import WriteOut
 
 from datetime import datetime, timezone, timedelta
 
@@ -26,7 +26,6 @@ session =requests.Session() # start the session
 
 def WhatTime():
     """returns the current date and time"""
-    print("hello world!")
     return f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}/" \
            f"{datetime.now(timezone(timedelta(hours=-7))).strftime('%m-%d %H:%M:%S')}"
 
@@ -50,30 +49,6 @@ def GetCandle(pair, candle):
     df = pd.DataFrame(data, columns=["time","open","high","low","close","vwap","volume","count"]) # Put in dataframe
     df["close"] = df["close"].astype(float)
     return df
-
-
-import csv
-import os
-
-def WriteOut(df):
-    """Writes out the latest price to CSV file. Writes header only if file does not exist."""
-
-    file_exists = os.path.isfile("data_log.csv")
-
-    with open("data_log.csv", "a", newline="") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        
-        if not file_exists:  # File doesn't exist , write header
-            writer.writerow(["Time", "Closing Price", "RSI Value", "Stochastic RSI", "Score"])
-        
-        # Write latest data row
-        writer.writerow([df["timeStamp"].iloc[-1],
-                         df["close"].iloc[-1],
-                         df["RSI"].iloc[-1],
-                         df["stochRSI"].iloc[-1],
-                         df["Score"].iloc[-1]])
-    
-    print(f'{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["RSI"].iloc[-1]:.2f}, {df["stochRSI"].iloc[-1]:.2f}, {df["Score"].iloc[-1]:.2f}')
 
 
 def addWeight(df):
@@ -132,6 +107,26 @@ def PaperTrade(df, buy, lotSize):
             # Subtract coins from holdings
             df.loc[df.index[-1], "Amount"]  -= lotSize
     return df
+
+def volume(df, lookback=20, z_thresh=1.5):
+    """returns a score based on volume""" 
+    if len(df) < lookback:
+        return 0
+    
+    vol = df["volume"].astype(float)
+    mu = vol.iloc[-lookback:].mean()
+    sigma = vol.iloc[-lookback:].std()
+
+    if sigma == 0:
+        return 0
+    
+    zVolume = (vol.ilor[-1] - mu) / sigma
+    df.loc[df.index[-1], "z_volume"] = z_volume
+
+    return zVolume
+
+
+    
 
 while True:
     df = GetCandle(pair, candle)
