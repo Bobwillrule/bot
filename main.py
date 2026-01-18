@@ -66,6 +66,11 @@ def addWeight(df):
     elif df["stochRSI"].iloc[-1] > 70:
         score -= 30
 
+    if df["zVolume"].iloc[-1] > 1.4:
+        score +=20
+    else:
+        score -= 5
+
     # set score only for the last row
     df.loc[df.index[-1], "Score"] = score
 
@@ -108,7 +113,7 @@ def PaperTrade(df, buy, lotSize):
             df.loc[df.index[-1], "Amount"]  -= lotSize
     return df
 
-def volume(df, lookback=20, z_thresh=1.5):
+def volume(df, lookback=20):
     """returns a score based on volume""" 
     if len(df) < lookback:
         return 0
@@ -121,7 +126,7 @@ def volume(df, lookback=20, z_thresh=1.5):
         return 0
     
     zVolume = (vol.ilor[-1] - mu) / sigma
-    df.loc[df.index[-1], "z_volume"] = z_volume
+    df.loc[df.index[-1], "zVolume"] = zVolume
 
     return zVolume
 
