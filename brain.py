@@ -18,6 +18,12 @@ class policyNetwork(nn.module):
     def forward(self, x):
         return self.layer(x)
     
+class TradingEnv:
+    """Simulates Trading of the bot"""
+    def __init__ (self, df, lotSize = 1, startBalace =1000) {
+        
+    }
+    
 
     
 

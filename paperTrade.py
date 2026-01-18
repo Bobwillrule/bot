@@ -1,4 +1,4 @@
-def PaperTrade(df, buy, lotSize):
+def paperTrade(df, buy, lotSize):
     """Practice trading updating only the last row (no history added)"""
 
     if buy:

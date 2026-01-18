@@ -7,6 +7,7 @@ import csv
 import pandas as pd
 from RSIIndicators import RSI, StochRSI
 from writeOut import WriteOut
+from paperTrade import paperTrade
 
 from datetime import datetime, timezone, timedelta
 
@@ -54,6 +55,7 @@ def GetCandle(pair, candle):
 def addWeight(df):
     df = RSI(df, RSIPeriod)
     df = StochRSI(df, RSIPeriod)
+    df = volume(df)
 
     score = 0
     if df["RSI"].iloc[-1] < 30:
@@ -79,59 +81,32 @@ def addWeight(df):
 def evaluation(df, buyThreshold, sellThreshold):
     df = addWeight(df)
     if (df["Score"] == buyThreshold): # If score is above threshold
-        PaperTrade(df)
+        paperTrade(df)
         df["decision"] = f"Buy @ {df["close"].iloc[-1]}" 
     elif (df["Score"] == sellThreshold): # If score is below seel threshold
-        PaperTrade(df)
+        paperTrade(df)
         df["decision"] = f"Sell @ {df["close"].iloc[-1]}"
     else: # Hold what you have 
         df["decision"] = "Hold"
     return df
 
-def PaperTrade(df, buy, lotSize):
-    """Practice trading updating only the last row (no history added)"""
-
-    if buy:
-        # Calculate cost of purchase
-        price = lotSize * df["close"].iloc[-1]
-
-        # Check that we have enough money to buy
-        if price <= df["Balance"].iloc[-1]:
-            # Deduct cost from balance
-            df.loc[df.index[-1], "Balance"] -= price
-            # Add coins to our holdings
-            df.loc[df.index[-1], "Amount"]  += lotSize
-
-    else:
-        # Check that we have enough coins to sell
-        if df["Amount"].iloc[-1] >= lotSize:
-            # Calculate proceeds of sale
-            price = lotSize * df["close"].iloc[-1]
-            # Add money to balance
-            df.loc[df.index[-1], "Balance"] += price
-            # Subtract coins from holdings
-            df.loc[df.index[-1], "Amount"]  -= lotSize
-    return df
-
 def volume(df, lookback=20):
-    """returns a score based on volume""" 
+    """returns a score based on volume and adds zVolume to df""" 
     if len(df) < lookback:
-        return 0
+        df.loc[df.index[-1], "zVolume"] = 0
+        return df
     
     vol = df["volume"].astype(float)
     mu = vol.iloc[-lookback:].mean()
     sigma = vol.iloc[-lookback:].std()
 
     if sigma == 0:
-        return 0
-    
-    zVolume = (vol.ilor[-1] - mu) / sigma
+        zVolume = 0
+    else:
+        zVolume = (vol.iloc[-1] - mu) / sigma
+
     df.loc[df.index[-1], "zVolume"] = zVolume
-
-    return zVolume
-
-
-    
+    return df
 
 while True:
     df = GetCandle(pair, candle)
