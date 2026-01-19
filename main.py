@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 import time
 import csv
 import pandas as pd
-from RSIIndicators import RSI, StochRSI
+from indicators.RSIIndicators import RSI, StochRSI
 from writeOut import WriteOut
 from paperTrade import paperTrade
+from indicators.volume import volume
 
 from datetime import datetime, timezone, timedelta
 
@@ -90,33 +91,17 @@ def evaluation(df, buyThreshold, sellThreshold):
         df["decision"] = "Hold"
     return df
 
-def volume(df, lookback=20):
-    """returns a score based on volume and adds zVolume to df""" 
-    if len(df) < lookback:
-        df.loc[df.index[-1], "zVolume"] = 0
-        return df
-    
-    vol = df["volume"].astype(float)
-    mu = vol.iloc[-lookback:].mean()
-    sigma = vol.iloc[-lookback:].std()
+def run():
+    while True:
+        df = GetCandle(pair, candle)
+        df["timeStamp"] = WhatTime()
+        df = addWeight(df)
+        df["Balance"] = startMoney
+        WriteOut(df) # get the latest price at index [-1]
+        time.sleep(interval)
 
-    if sigma == 0:
-        zVolume = 0
-    else:
-        zVolume = (vol.iloc[-1] - mu) / sigma
-
-    df.loc[df.index[-1], "zVolume"] = zVolume
-    return df
-
-while True:
-    df = GetCandle(pair, candle)
-    df["timeStamp"] = WhatTime()
-    df = addWeight(df)
-    df["Balance"] = startMoney
-    WriteOut(df) # get the latest price at index [-1]
-    time.sleep(interval)
-
-
+if __name__ == "__main__":
+    run()
 
 
 
