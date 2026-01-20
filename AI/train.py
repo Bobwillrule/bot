@@ -1,10 +1,11 @@
 import os
 from dotenv import load_dotenv
 import pandas as pd
-from AI import TradingEnv
+import torch
+from AI.TradingEnv import TradingEnv
 from AI.brain import trainDQN
 from indicators.RSIIndicators import RSI, StochRSI
-from indicators.volume import volume, zVolume
+from indicators.volume import zVolume
 
 load_dotenv() 
 
@@ -19,16 +20,34 @@ startMoney = int(os.getenv("INITIALPAPERMONEY"))
 lotSize = int(os.getenv("HOWMANYYOUWANT"))
 
 
+# def load_data(filename, RSI_period=14):
+#     df = pd.read_csv(filename)
+#     df = RSI(df, RSI_period)              # add RSI column
+#     df = StochRSI(df, RSI_period)         # add stochastic RSI
+#     df = zVolume(df)              # normalized volume for DQN
+#     df = df.dropna().reset_index(drop=True)
+#     return df
+
 def load_data(filename, RSI_period=14):
-    df = pd.read_csv(filename)
-    df = RSI(df, RSI_period)              # add RSI column
-    df = StochRSI(df, RSI_period)         # add stochastic RSI
-    df = zVolume(df)              # normalized volume for DQN
+
+    df = pd.read_csv(
+        "BTTUSD_5.csv",
+        names=["open", "high", "low", "close", "volume", "trades"]
+    )
+
+    df["close"] = df["close"].astype(float)
+    df["volume"] = df["volume"].astype(float)
+
+    df = RSI(df, RSI_period)
+    df = StochRSI(df, RSI_period)
+    df = zVolume(df)
+
     df = df.dropna().reset_index(drop=True)
     return df
 
+
 def train():
-    df = load_data("BTCUSD_1min.csv", RSIPeriod)
+    df = load_data("BTTUSD_5.csv", RSIPeriod)
 
     env = TradingEnv(df, lotSize=1, startBalance=startMoney)
 

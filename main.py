@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 import time
 import csv
 import pandas as pd
+import torch
 
 from AI.brain import policyNetwork
 from AI.train import train
 from indicators.RSIIndicators import RSI, StochRSI
 from data.writeOut import WriteOut
 from paperTrade import paperTrade
-from indicators.volume import volume, zVolume
+from indicators.volume import zVolume
 from data.time import WhatTime
 
 load_dotenv() 

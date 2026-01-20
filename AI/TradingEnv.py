@@ -1,8 +1,11 @@
+import numpy as np
+
+
 class TradingEnv:
     """Simulates Trading of the bot"""
 
     #Initilizes empty porfolio
-    def __init__ (self, df, lotSize = 1, startBalance =1000):
+    def __init__ (self, df, lotSize = 0.001, startBalance =1000):
         self.df = df.reset_index(drop = True)
         self.lotSize = lotSize
         self.startBalance = startBalance
@@ -21,11 +24,11 @@ class TradingEnv:
     def _getState(self):
         row = self.df.iloc[self.t]
         return np.array([
-            row["RSI"],
-            row["stochRSI"],
-            row["z_volume"],
-            self.holdingNum,
-            self.balance
+            row["RSI"],                    # 0-100
+            row["stochRSI"],               # 0-100
+            row["zVolume"],                # roughly ~[-3,3]
+            self.holdingNum / self.lotSize, # fraction of max lot held (0-1)
+            self.balance / self.startBalance # normalized balance (0-1)
         ], dtype=np.float32)
     
     
@@ -59,11 +62,18 @@ class TradingEnv:
 
         if self.t >= len(self.df): # Check if we are at the end of training data
             self.done = True
-            return self._getState(), 0.0, self.done
-        
+            return np.array([
+                row["RSI"],
+                row["stochRSI"],
+                row["zVolume"],
+                self.holdingNum,
+                self.balance
+            ], dtype=np.float32), 0.0, self.done
 
         newPrice = self.df.iloc[self.t]["close"]
         newValue = self.balance + newPrice * self.holdingNum
-        reward = newValue - oldValue
+        reward = ((newValue - oldValue) / self.startBalance) 
+        reward = reward * 15_000_000
+
 
         return self._getState(), reward, self.done
