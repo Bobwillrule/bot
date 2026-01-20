@@ -11,7 +11,7 @@ from AI.brain import policyNetwork
 from AI.train import train
 from indicators.RSIIndicators import RSI, StochRSI
 from data.writeOut import WriteOut
-from paperTrade import paperTrade
+from paperTrade import load_portfolio, paperTrade, save_portfolio
 from indicators.volume import zVolume
 from data.time import WhatTime
 
@@ -82,11 +82,12 @@ def startUp():
 def run():
     # Load policy
     policy = policyNetwork(stateSize=5, actionSize=3)
-    policy.load_state_dict(torch.load("model.pth"))
+    policy.load_state_dict(torch.load("trading_model.pth"))
     policy.eval()
 
-    balance = startMoney
-    holdingNum = 0
+    portfolio = load_portfolio(startMoney)
+    balance = portfolio["balance"]
+    holdingNum = portfolio["position"]
 
     while True:
         df = GetCandle(pair, candle)
@@ -95,7 +96,7 @@ def run():
         # compute indicators (assuming your RSIIndicators module does this)
         df["rsi"] = RSI(df["close"], RSIPeriod)
         df["stoch_rsi"] = StochRSI(df["rsi"])
-        df["volume"] = zVolume(df["volume"])
+        df = zVolume(df)
 
         # Extract state
         state = extract_state(df, holdingNum, balance)
@@ -111,14 +112,22 @@ def run():
             paperTrade.buy(price)
             holdingNum += lotSize
             balance -= price * lotSize
+            portfolio["num_trades"] += 1
+            
         elif action == 2:
             paperTrade.sell(price)
             holdingNum -= lotSize
             balance += price * lotSize
+            portfolio["num_trades"] += 1
+            
 
         # Save results
         df["Balance"] = balance
         WriteOut(df)
+
+        portfolio["balance"] = balance
+        portfolio["position"] = holdingNum
+        save_portfolio(portfolio)
 
         time.sleep(interval)
 

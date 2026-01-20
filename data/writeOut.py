@@ -9,13 +9,12 @@ def WriteOut(df):
         writer = csv.writer(csv_file, delimiter=',')
         
         if not file_exists:  # File doesn't exist , write header
-            writer.writerow(["Time", "Closing Price", "RSI Value", "Stochastic RSI", "Score"])
+            writer.writerow(["Time", "Closing Price", "RSI Value", "Stochastic RSI"])
         
         # Write latest data row
         writer.writerow([df["timeStamp"].iloc[-1],
                          df["close"].iloc[-1],
-                         df["RSI"].iloc[-1],
-                         df["stochRSI"].iloc[-1],
-                         df["Score"].iloc[-1]])
+                         df["rsi"].iloc[-1],
+                         df["stoch_rsi"].iloc[-1]])
     
-    print(f'{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["RSI"].iloc[-1]:.2f}, {df["stochRSI"].iloc[-1]:.2f}, {df["Score"].iloc[-1]:.2f}')
+    print(f'{df["timeStamp"].iloc[-1]}, {df["close"].iloc[-1]}, {df["rsi"].iloc[-1]:.2f}, {df["stoch_rsi"].iloc[-1]:.2f}')
