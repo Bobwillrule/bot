@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from numpy import double
 import pandas as pd
 import torch
 from AI.TradingEnv import TradingEnv
@@ -17,7 +18,7 @@ RSIPeriod = int(os.getenv("RSIPERIOD"))
 sellThreshold = int(os.getenv("SELLTHRESHOLD"))
 buyThreshold = int(os.getenv("BUYTHRESHOLD"))
 startMoney = int(os.getenv("INITIALPAPERMONEY"))
-lotSize = int(os.getenv("HOWMANYYOUWANT"))
+lotSize = float(os.getenv("HOWMANYYOUWANT"))
 
 
 # def load_data(filename, RSI_period=14):

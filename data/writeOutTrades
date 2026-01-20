@@ -1,9 +1,9 @@
 import os
 import csv
-def WriteOut(df):
-    """Writes out the latest price to CSV file. Writes header only if file does not exist."""
+def WriteOutTrades(df):
+    """Writes out the trades to CSV file. Writes header only if file does not exist."""
 
-    file_exists = os.path.isfile("data/dataLogs/data_log.csv")
+    file_exists = os.path.isfile("data/dataLogs/TradeOnly.csv")
 
     with open("data_log.csv", "a", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')

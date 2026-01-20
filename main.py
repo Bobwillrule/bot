@@ -25,7 +25,7 @@ RSIPeriod = int(os.getenv("RSIPERIOD"))
 sellThreshold = int(os.getenv("SELLTHRESHOLD"))
 buyThreshold = int(os.getenv("BUYTHRESHOLD"))
 startMoney = int(os.getenv("INITIALPAPERMONEY"))
-lotSize = int(os.getenv("HOWMANYYOUWANT"))
+lotSize = float(os.getenv("HOWMANYYOUWANT"))
 session =requests.Session() # start the session
 
 
@@ -85,11 +85,14 @@ def run():
     policy.load_state_dict(torch.load("trading_model.pth"))
     policy.eval()
 
+    # Load the json portfolio values
     portfolio = load_portfolio(startMoney)
     balance = portfolio["balance"]
     holdingNum = portfolio["position"]
 
+    #Main Loop
     while True:
+        #Get Data from kraken
         df = GetCandle(pair, candle)
         df["timeStamp"] = WhatTime()
 
