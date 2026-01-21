@@ -28,7 +28,7 @@ A **reinforcement learning-based trading bot** that simulates cryptocurrency tra
 
 ## Directory Organization
 ```
-crypto-dqn-bot/
+bot/
 │
 ├─ AI/
 │   ├─ brain.py        # DQN network and training functions
