@@ -1,17 +1,9 @@
-def volume(df, lookback=20):
-    """returns a score based on volume and adds zVolume to df""" 
-    if len(df) < lookback:
-        df.loc[df.index[-1], "zVolume"] = 0
-        return df
-    
+def zVolume(df, lookback=20):
+    """computes zVolume (z-score of volume) for all rows"""
     vol = df["volume"].astype(float)
-    mu = vol.iloc[-lookback:].mean()
-    sigma = vol.iloc[-lookback:].std()
+    rolling_mean = vol.rolling(lookback).mean()
+    rolling_std = vol.rolling(lookback).std()
 
-    if sigma == 0:
-        zVolume = 0
-    else:
-        zVolume = (vol.iloc[-1] - mu) / sigma
-
-    df.loc[df.index[-1], "zVolume"] = zVolume
+    # compute z-score, avoid division by zero
+    df["zVolume"] = ((vol - rolling_mean) / (rolling_std + 1e-8)).fillna(0)
     return df

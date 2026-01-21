@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 import time
 import csv
 import pandas as pd
-from indicators.RSIIndicators import RSI, StochRSI
-from writeOut import WriteOut
-from paperTrade import paperTrade
-from indicators.volume import volume
 
-from datetime import datetime, timezone, timedelta
+from AI.brain import policyNetwork
+from AI.train import train
+from indicators.RSIIndicators import RSI, StochRSI
+from data.writeOut import WriteOut
+from paperTrade import paperTrade
+from indicators.volume import volume, zVolume
+from data.time import WhatTime
 
 load_dotenv() 
 
@@ -23,13 +25,7 @@ sellThreshold = int(os.getenv("SELLTHRESHOLD"))
 buyThreshold = int(os.getenv("BUYTHRESHOLD"))
 startMoney = int(os.getenv("INITIALPAPERMONEY"))
 lotSize = int(os.getenv("HOWMANYYOUWANT"))
-
 session =requests.Session() # start the session
-
-def WhatTime():
-    """returns the current date and time"""
-    return f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}/" \
-           f"{datetime.now(timezone(timedelta(hours=-7))).strftime('%m-%d %H:%M:%S')}"
 
 
 def PublicInfo(linkEnd, pair, candle):
@@ -53,54 +49,81 @@ def GetCandle(pair, candle):
     return df
 
 
-def addWeight(df):
-    df = RSI(df, RSIPeriod)
-    df = StochRSI(df, RSIPeriod)
-    df = volume(df)
+# Order: [RSI, stochRSI, z_volume, holdingNum, balance]
+def extract_state(df, holdingNum=0, balance=1000):
+    last = df.iloc[-1]
+    return torch.tensor([
+        last["rsi"],         # or RSI column from your indicators
+        last["stoch_rsi"],   # StochRSI column
+        last["zVolume"],      # normalized volume
+        holdingNum,          # current holding number
+        balance              # current balance
+    ], dtype=torch.float32)
 
-    score = 0
-    if df["RSI"].iloc[-1] < 30:
-        score += 30
-    elif df["RSI"].iloc[-1] > 70:
-        score -= 30
 
-    if df["stochRSI"].iloc[-1] < 30:
-        score += 30
-    elif df["stochRSI"].iloc[-1] > 70:
-        score -= 30
-
-    if df["zVolume"].iloc[-1] > 1.4:
-        score +=20
-    else:
-        score -= 5
-
-    # set score only for the last row
-    df.loc[df.index[-1], "Score"] = score
-
-    return df
-
-def evaluation(df, buyThreshold, sellThreshold):
-    df = addWeight(df)
-    if (df["Score"] == buyThreshold): # If score is above threshold
-        paperTrade(df)
-        df["decision"] = f"Buy @ {df["close"].iloc[-1]}" 
-    elif (df["Score"] == sellThreshold): # If score is below seel threshold
-        paperTrade(df)
-        df["decision"] = f"Sell @ {df["close"].iloc[-1]}"
-    else: # Hold what you have 
-        df["decision"] = "Hold"
-    return df
+def startUp():
+    """starts the program, asks if training is needed or not"""
+    loop = True
+    while loop:
+        trainOption = input("Do you want to train the model? (y/n): ").lower()
+        if trainOption == "":
+            print("No input detected, skipping training.")
+            loop = False
+        elif trainOption == "y":
+            train()
+            loop = False
+        elif trainOption == "n":
+            print("Skipping training.")
+            loop = False
+        else:
+            print(f"Invalid input: '{trainOption}'.")
 
 def run():
+    # Load policy
+    policy = policyNetwork(stateSize=5, actionSize=3)
+    policy.load_state_dict(torch.load("model.pth"))
+    policy.eval()
+
+    balance = startMoney
+    holdingNum = 0
+
     while True:
         df = GetCandle(pair, candle)
         df["timeStamp"] = WhatTime()
-        df = addWeight(df)
-        df["Balance"] = startMoney
-        WriteOut(df) # get the latest price at index [-1]
+
+        # compute indicators (assuming your RSIIndicators module does this)
+        df["rsi"] = RSI(df["close"], RSIPeriod)
+        df["stoch_rsi"] = StochRSI(df["rsi"])
+        df["volume"] = zVolume(df["volume"])
+
+        # Extract state
+        state = extract_state(df, holdingNum, balance)
+
+        # Decide action
+        with torch.no_grad():
+            qvals = policy(state)
+            action = torch.argmax(qvals).item()
+
+        # Execute trade
+        price = df.iloc[-1]["close"]
+        if action == 1:
+            paperTrade.buy(price)
+            holdingNum += lotSize
+            balance -= price * lotSize
+        elif action == 2:
+            paperTrade.sell(price)
+            holdingNum -= lotSize
+            balance += price * lotSize
+
+        # Save results
+        df["Balance"] = balance
+        WriteOut(df)
+
         time.sleep(interval)
 
+
 if __name__ == "__main__":
+    startUp()
     run()
 
 

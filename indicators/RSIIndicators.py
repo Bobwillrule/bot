@@ -1,3 +1,4 @@
+
 def RSI(df, period=14):
     """Calculate RSI with Wilder's Smoothing/exponential moving average"""
     delta = df['close'].diff()
