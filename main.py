@@ -27,6 +27,15 @@ buyThreshold = int(os.getenv("BUYTHRESHOLD"))
 startMoney = int(os.getenv("INITIALPAPERMONEY"))
 lotSize = float(os.getenv("HOWMANYYOUWANT"))
 session =requests.Session() # start the session
+CANDLE_SECONDS = int(candle) * 60
+
+
+
+def sleep_until_next_candle():
+    now = time.time()
+    sleep_time = CANDLE_SECONDS - (now % CANDLE_SECONDS)
+    time.sleep(sleep_time + 0.1)  # small buffer
+
 
 
 def PublicInfo(linkEnd, pair, candle):
@@ -92,6 +101,8 @@ def run():
 
     #Main Loop
     while True:
+        sleep_until_next_candle()
+
         #Get Data from kraken
         df = GetCandle(pair, candle)
         df["timeStamp"] = WhatTime()
@@ -131,8 +142,6 @@ def run():
         portfolio["balance"] = balance
         portfolio["position"] = holdingNum
         save_portfolio(portfolio)
-
-        time.sleep(interval)
 
 
 if __name__ == "__main__":
