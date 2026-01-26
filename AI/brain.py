@@ -24,7 +24,7 @@ class policyNetwork(nn.Module):
         return self.layer(x)
     
     
-def trainDQN(env, episodes = 50, gamma=0.95, lr=1e-3, epsilon=0.1, stateSize = 5, actionSize = 3):
+def trainDQN(env, episodes = 1000, gamma=0.95, lr=1e-3, epsilon=0.1, stateSize = 5, actionSize = 3):
     """trains the AI using reinforcement learning"""
     policy = policyNetwork(stateSize, actionSize).to(device)
     optimizer = optim.Adam(policy.parameters(), lr=lr)

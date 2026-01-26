@@ -39,8 +39,8 @@ def load_data(filename, RSI_period=14):
     df["close"] = df["close"].astype(float)
     df["volume"] = df["volume"].astype(float)
 
-    df = RSI(df, RSI_period)
-    df = StochRSI(df, RSI_period)
+    df["rsi"] = RSI(df["close"], period=RSIPeriod)
+    df["stoch_rsi"] = StochRSI(df["rsi"], period=RSIPeriod)
     df = zVolume(df)
 
     df = df.dropna().reset_index(drop=True)
@@ -52,7 +52,7 @@ def train():
 
     env = TradingEnv(df, lotSize=1, startBalance=startMoney)
 
-    policy = trainDQN(env, episodes=50, gamma=0.95, lr=1e-3, epsilon=0.1)
+    policy = trainDQN(env, episodes=3000, gamma=0.95, lr=1e-3, epsilon=0.1)
 
     torch.save(policy.state_dict(), "trading_model.pth")
     print("Model saved as trading_model.pth")
