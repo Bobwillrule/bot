@@ -71,6 +71,26 @@ def extract_state(df, holdingNum=0, balance=1000):
     ], dtype=torch.float32)
 
 
+def select_model(model_dir="AImodels"):
+    models = [f for f in os.listdir(model_dir) if os.path.isfile(os.path.join(model_dir, f))]
+
+    if not models:
+        print("No models found, please train one prior to running one.")
+        return None
+
+    print("\nAvailable models:")
+    for i, model in enumerate(models, start=1):
+        print(f"{i}. {model}")
+
+    while True:
+        choice = input("Select a model by number: ").strip()
+        if choice.isdigit():
+            choice = int(choice)
+            if 1 <= choice <= len(models):
+                return os.path.join(model_dir, models[choice - 1])
+        print("Invalid selection. Try again.")
+
+
 def startUp():
     """starts the program, asks if training is needed or not"""
     loop = True
@@ -80,15 +100,22 @@ def startUp():
             print("No input detected, skipping training.")
             loop = False
         elif trainOption == "y":
-            train()
+            fileName = input("Please Input Your Model Name: ").lower()
+            train(fileName)
             loop = False
         elif trainOption == "n":
             print("Skipping training.")
             loop = False
         else:
             print(f"Invalid input: '{trainOption}'.")
+    
+    if (trainOption == "" or trainOption == "n"):
+        run(select_model())
+    else:
+        run(fileName)
+        
 
-def run():
+def run(model):
     # Load policy
     policy = policyNetwork(stateSize=5, actionSize=3)
     policy.load_state_dict(torch.load("trading_model.pth"))
@@ -147,6 +174,10 @@ def run():
 if __name__ == "__main__":
     startUp()
     run()
+
+
+
+
 
 
 
